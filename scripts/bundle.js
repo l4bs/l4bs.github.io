@@ -74950,7 +74950,7 @@ e.meditation = mid => {
       vonoff.text('Already started, ask team for another session.')
       conoff.attr('checked', true)
       conoff.attr('disabled', true)
-      countdown.text('status: started')
+      countdown.text('started')
       return
     }
     const timer = setInterval(function () {
@@ -74961,14 +74961,14 @@ e.meditation = mid => {
       seconds = seconds < 10 ? '0' + seconds : seconds
 
       // display.text('status: countdown on ' + minutes + ':' + seconds)
-      countdown.text('status: countdown on ' + minutes + ':' + seconds)
+      countdown.text('countdown on ' + minutes + ':' + seconds)
 
       duration -= 0.1
       if (duration < 0) {
         clearInterval(timer)
         duration = 0
         // display.text('status: started')
-        countdown.text('status: started')
+        countdown.text('started')
         // t.start()
         t.Master.mute = false
         synth.volume.rampTo(-40, 1)
@@ -75003,6 +75003,11 @@ e.meditation = mid => {
     .endFill()
   const myCircle3 = new PIXI.Graphics()
     .beginFill(0x00ff00)
+    .drawCircle(0, 0, 5)
+    .endFill()
+
+  const myCircle4 = new PIXI.Graphics()
+    .beginFill(0x4444ff)
     .drawCircle(0, 0, 5)
     .endFill()
 
@@ -75047,6 +75052,8 @@ e.meditation = mid => {
   c.addChild(myCircle_)
   c.addChild(myCircle2)
   c.addChild(myCircle3)
+  c.addChild(myCircle4)
+  myCircle4.x = x + dx * 1.05
   myCircle.position.set(x, y)
   myCircle_.position.set(x + dx, y)
   window.mmm = { myCircle, app }
@@ -75074,6 +75081,10 @@ e.meditation = mid => {
     add400.connect(synth.frequency)
     add410.connect(synth2.frequency)
     const parts = []
+    let prop = 1
+    let propx = 1
+    let propy = 1
+    let rot = Math.random() * 0.1
     setInterval(() => {
       const dc = met2.getValue()
       m1.text(met.getValue().toFixed(3))
@@ -75087,6 +75098,23 @@ e.meditation = mid => {
       const px2 = (Math.PI - avalr) / (2 * Math.PI) * dx + x
       myCircle3.x = px2
       myCircle3.y = val * dy + y
+
+      myCircle4.y = val * dy + y
+      const sc = 0.3 + (-val + 1) * 3
+      myCircle4.scale.set(sc * propx, sc * propy)
+      myCircle4.rotation += rot
+      if (Math.random() > 0.98) {
+        const circ4 = mkNode([myCircle4.x, myCircle4.y], 0.3)
+        parts.push(circ4)
+        circ4.tint = 0x5555ff
+      }
+      if (sc - 0.3 < 0.0005) {
+        console.log('Yes yes yes')
+        rot = Math.random() * 0.1
+        prop = Math.random() * 0.6 + 0.4
+        propx = prop
+        propy = 1 / prop
+      }
 
       theCircle.x += (Math.random() - 0.5)
       theCircle.y += (Math.random() - 0.5)
