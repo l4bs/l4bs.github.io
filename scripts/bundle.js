@@ -74863,15 +74863,63 @@ e.mkMed = () => {
 
   const grid = utils.mkGrid(2)
 
+  const s = $('<select/>', { id: 'mselect' }).appendTo(grid)
+    .append($('<option/>').val(-1).html('~ creating ~'))
+    .attr('title', 'Select template to load, edit, or delete.')
+    .on('change', aself => {
+      // load them
+      const ii = aself.currentTarget.value
+      console.log(ii)
+      if (ii === '-1') {
+        return
+      }
+      const e = window.allthem2[ii]
+      mdiv.val(e.meditation)
+      fl.val(e.fl)
+      fr.val(e.fr)
+      mp0.val(e.mp0)
+      mp1.val(e.mp1)
+      ma.val(e.ma)
+      md.val(e.md)
+      d.val(e.d)
+      mfp.setDate(e.dateTime)
+      ellipse.prop('checked', e.ellipse)
+      obutton.attr('disabled', false).html(`Open: ${mdiv.val()}`)
+    })
+  window.allthem = transfer.findAll({ meditation: { $exists: true } }).then(r => {
+    window.allthem2 = r
+    r.forEach((i, ii) => {
+      s.append($('<option/>', { class: 'pres' }).val(ii).html(i.meditation))
+    })
+  })
+  window.ass = s
+  $('<button/>').html('Delete').appendTo(grid)
+    .click(() => {
+      // console.log('delete current settings')
+      // console.log($('.pres option[value="2"]'))
+      // console.log($('option[value="2"]'))
+      console.log($(`option[value="${$('#mselect').val()}"].pres`))
+      // $(`option[value="${$('#mselect').val()}"].pres`).remove()
+      const moption = $(`option[value="${$('#mselect').val()}"].pres`)
+      window.moption = moption
+      transfer.remove({ meditation: window.allthem2[moption[0].value].meditation })
+      moption.remove()
+      // console.log($('#mselect').val())
+    })
+    .attr('title', 'Delete the meditation loaded in the dropdown menu.')
+    // .attr('disabled', true)
+  // $('<span/>').html('').appendTo(grid)
   $('<span/>').html('id:').appendTo(grid)
   const mdiv = $('<input/>', {
     placeholder: 'id for the meditation'
   }).appendTo(grid)
+    .attr('title', 'The ID for the meditation (will appear on the URL).')
 
   $('<span/>').html('when:').appendTo(grid)
   const adiv = $('<input/>', {
     placeholder: 'select date and time'
   }).appendTo(grid)
+    .attr('title', 'Select a date and time for the mentalization to occur.')
   const mfp = flatpickr(adiv, {
     enableTime: true
   })
@@ -74880,55 +74928,107 @@ e.mkMed = () => {
   const fl = $('<input/>', {
     placeholder: 'freq in Herz'
   }).appendTo(grid)
+    .attr('title', 'Frequency on the left channel.')
 
   $('<span/>').html('freq right:').appendTo(grid)
   const fr = $('<input/>', {
     placeholder: 'freq in Herz'
   }).appendTo(grid)
-
-  $('<span/>').html('Martigli initial freq:').appendTo(grid)
-  const mf0 = $('<input/>', {
-    placeholder: 'freq in miliHerz'
-  }).appendTo(grid)
-
-  $('<span/>').html('Martigli final freq:').appendTo(grid)
-  const mf1 = $('<input/>', {
-    placeholder: 'freq in miliHerz'
-  }).appendTo(grid)
+    .attr('title', 'Frequency on the right channel.')
 
   $('<span/>').html('Martigli amplitude:').appendTo(grid)
   const ma = $('<input/>', {
     placeholder: 'in Herz'
   }).appendTo(grid)
+    .attr('title', 'Variation span of the frequency to guide breathing.')
+
+  $('<span/>').html('Martigli initial period:').appendTo(grid)
+  const mp0 = $('<input/>', {
+    placeholder: 'period in seconds'
+  }).appendTo(grid)
+    .attr('title', 'Initial duration of the breathing cycle.')
+
+  $('<span/>').html('Martigli final period:').appendTo(grid)
+  const mp1 = $('<input/>', {
+    placeholder: 'period in seconds'
+  }).appendTo(grid)
+    .attr('title', 'Final duration of the breathing cycle.')
 
   $('<span/>').html('Martigli transition:').appendTo(grid)
   const md = $('<input/>', {
     placeholder: 'duration in seconds'
   }).appendTo(grid)
+    .attr('title', 'Duration of the transition from the initial to the final Martigli period.')
 
   $('<span/>').html('total duration:').appendTo(grid)
   const d = $('<input/>', {
     placeholder: 'in seconds (0 if forever)'
   }).appendTo(grid)
+    .attr('title', 'Duration of the meditation in seconds.')
+
+  $('<span/>').html('breathing ellipse:').appendTo(grid)
+  const ellipse = $('<input/>', {
+    type: 'checkbox'
+  }).appendTo(grid)
+    .attr('title', 'Breath-scaled circle is ellipsoid if checked.')
 
   const f = parseFloat
   $('<button/>')
+    .attr('title', 'Create the meditation with the settings defined.')
     .html('Create')
     .click(() => {
       console.log('the date:', mfp.selectedDates[0])
-      console.log('the id:', mdiv.val())
-      transfer.writeAny({
-        meditation: mdiv.val(),
-        dateTime: mfp.selectedDates[0],
+      console.log('the id:', mdiv.val() === '')
+      const mdict = {
         fl: f(fl.val()),
         fr: f(fr.val()),
-        mf0: f(mf0.val()),
-        mf1: f(mf1.val()),
+        mp0: f(mp0.val()),
+        mp1: f(mp1.val()),
         ma: f(ma.val()),
         md: f(md.val()),
         d: f(d.val())
-      }).then(resp => console.log(resp))
+      }
+      for (const key in mdict) {
+        if (isNaN(mdict[key])) {
+          window.alert(`define the value for ${key}.`)
+          return
+        }
+      }
+      console.log(mdict, 'MDICT')
+      mdict.dateTime = mfp.selectedDates[0]
+      if (mdict.dateTime === undefined || mdict.dateTime < new Date()) {
+        window.alert('define a date which has not passed.')
+        return
+      }
+      mdict.meditation = mdiv.val()
+      if (mdict.meditation === '') {
+        window.alert('define the meditation id.')
+      }
+      for (let i = 0; i < window.allthem2.length; i++) {
+        if (mdict.meditation === window.allthem2[i].meditation) {
+          window.alert('change the meditation id to be unique.')
+          return
+        }
+      }
+      mdict.ellipse = ellipse.prop('checked')
+      console.log(fl.val())
+      if (f(fr.val()) < 4) return
+      transfer.writeAny(mdict).then(resp => console.log(resp))
+      // enable button with the name
+      s.append($('<option/>', { class: 'pres' }).val(window.allthem2.length).html(mdict.meditation))
+      s.val(window.allthem2.length)
+      window.allthem2.push(mdict)
+      obutton.attr('disabled', false).html(`Open: ${mdiv.val()}`)
     }).appendTo(grid)
+  const obutton = $('<button/>')
+    .html('Open')
+    .attr('title', 'Open URL of the meditation.')
+    .click(() => {
+      // open url with
+      window.open(`?m=${mdiv.val()}`)
+    })
+    .appendTo(grid)
+    .attr('disabled', true)
   window.transfer = transfer
   window.mdiv = mdiv
 }
@@ -74940,46 +75040,28 @@ e.meditation = mid => {
     console.log(r)
     window.rrr = r
     window.startTimer = startTimer
+    if (r === null) {
+      grid.css('background', 'red')
+      countdown.text("don't exist")
+      conoff.attr('disabled', true)
+      vonoff.text('-----')
+    }
     const dur = (r.dateTime.getTime() - (new Date()).getTime()) / 1000
     startTimer(dur, $('<span/>').appendTo('body'), r)
   })
   function startTimer (duration, display, settings) {
-    const s = settings
-    const { synth, synth2, mod } = setSounds(s)
     if (duration < 0) {
-      vonoff.text('Already started, ask team for another session.')
+      vonoff.text('Already started, maybe finished, ask team for another session.')
       conoff.attr('checked', true)
       conoff.attr('disabled', true)
-      countdown.text('started')
+      countdown.text('finished')
+      grid.css('background', '#bbaaff')
       return
     }
-    const timer = setInterval(function () {
-      let minutes = parseInt(duration / 60, 10)
-      let seconds = parseInt(duration % 60, 10)
-
-      minutes = minutes < 10 ? '0' + minutes : minutes
-      seconds = seconds < 10 ? '0' + seconds : seconds
-
-      // display.text('status: countdown on ' + minutes + ':' + seconds)
-      countdown.text('countdown on ' + minutes + ':' + seconds)
-
-      duration -= 0.1
-      if (duration < 0) {
-        clearInterval(timer)
-        duration = 0
-        // display.text('status: started')
-        countdown.text('started')
-        // t.start()
-        t.Master.mute = false
-        synth.volume.rampTo(-40, 1)
-        synth2.volume.rampTo(-40, 1)
-        mod.frequency.rampTo(s.mf1 / 1000, s.md)
-        setTimeout(() => {
-          synth.volume.rampTo(-400, 10)
-          synth2.volume.rampTo(-400, 10)
-        }, s.d * 1000)
-      }
-    }, 100)
+    setSounds(settings, duration, display)
+    // const { synth, synth2, mod } = setSounds(settings, duration, display)
+    // const timer = setInterval(function () {
+    // }, 100)
   }
   const nodeContainer = new PIXI.ParticleContainer(10000, {
     scale: true,
@@ -75019,6 +75101,7 @@ e.meditation = mid => {
   const [w, h] = [app.view.width, app.view.height]
 
   const circleTexture = app.renderer.generateTexture(myCircle)
+  // const circleTexture = PIXI.Texture.from('assets/heart.png') todo: integrate images
   app.stage.addChild(nodeContainer)
   function mkNode (pos, scale) {
     const circle = new PIXI.Sprite(circleTexture)
@@ -75058,13 +75141,13 @@ e.meditation = mid => {
   myCircle_.position.set(x + dx, y)
   window.mmm = { myCircle, app }
 
-  function setSounds (s) {
+  function setSounds (s, duration, display) {
     const synth = maestro.mkOsc(u('l') || 400, -200, -1, 'sine') // fixme: dummy freq
     const synth2 = maestro.mkOsc(u('r') || 410, -200, 1, 'sine') // fixme: dummy freq
     // const mod = maestro.mkOsc(u('o') || 0.1, 46.02, 0, 'sine', true)
     synth.volume.rampTo(-400, 1)
     synth2.volume.rampTo(-400, 1)
-    const mod_ = maestro.mkOsc(s.mf0 / 1000, 0, 0, 'sine', true)
+    const mod_ = maestro.mkOsc(1 / s.mp0, 0, 0, 'sine', true)
     const oscAmp = s.ma
     const freqRef = s.fl
     const mul = new t.Multiply(oscAmp)
@@ -75085,7 +75168,45 @@ e.meditation = mid => {
     let propx = 1
     let propy = 1
     let rot = Math.random() * 0.1
-    setInterval(() => {
+    let okGiven
+    const timer = setInterval(() => {
+      let minutes = parseInt(duration / 60, 10)
+      let seconds = parseInt(duration % 60, 10)
+
+      minutes = minutes < 10 ? '0' + minutes : minutes
+      seconds = seconds < 10 ? '0' + seconds : seconds
+
+      // display.text('status: countdown on ' + minutes + ':' + seconds)
+      countdown.text('countdown on ' + minutes + ':' + seconds)
+
+      duration -= 0.1
+      if (duration < 0) {
+        clearInterval(timer)
+        duration = 0
+        // display.text('status: started')
+        countdown.text('started')
+        // t.start()
+        t.Master.mute = false
+        synth.volume.rampTo(-40, 1)
+        synth2.volume.rampTo(-40, 1)
+        mod.frequency.rampTo(1 / s.mp1, s.md)
+        setTimeout(() => {
+          grid.css('background', 'blue')
+          countdown.text('finished')
+          synth.volume.rampTo(-400, 10)
+          synth2.volume.rampTo(-400, 10)
+        }, s.d * 1000)
+      }
+
+      if (!okGiven) {
+        if (conoff.attr('disabled')) {
+          grid.css('background', 'green')
+          okGiven = true
+        } else {
+          return
+        }
+      }
+      // HERE
       const dc = met2.getValue()
       m1.text(met.getValue().toFixed(3))
       m2.text(dc.toFixed(3))
@@ -75108,8 +75229,7 @@ e.meditation = mid => {
         parts.push(circ4)
         circ4.tint = 0x5555ff
       }
-      if (sc - 0.3 < 0.0005) {
-        console.log('Yes yes yes')
+      if (s.ellipse && sc - 0.3 < 0.0005) {
         rot = Math.random() * 0.1
         prop = Math.random() * 0.6 + 0.4
         propx = prop
@@ -75150,6 +75270,7 @@ e.meditation = mid => {
   const grid = utils.mkGrid(2)
   $('<div/>').appendTo(grid).text('status:')
   const countdown = $('<div/>', { id: 'countdown' }).appendTo(grid)
+  grid.css('background', 'yellow')
 
   const vonoff = $('<div/>', { id: 'vonoff' }).appendTo(grid).text('Check me!')
 
@@ -75163,12 +75284,6 @@ e.meditation = mid => {
       // play
       vonoff.text('All set!')
     }
-    // else {
-    //   synth.volume.rampTo(-200, 1)
-    //   synth2.volume.rampTo(-200, 1)
-    //   // stop
-    //   vonoff.text('Stopped')
-    // }
   })
 
   $('<div/>').text('meter').appendTo(grid)
@@ -75217,6 +75332,18 @@ e.writeAny = data => {
 e.findAny = data => {
   return client.auth.loginWithCredential(new s.AnonymousCredential()).then(user => {
     return db.collection(auth.collections.test).findOne(data)
+  })
+}
+
+e.findAll = query => {
+  return client.auth.loginWithCredential(new s.AnonymousCredential()).then(user => {
+    return db.collection(auth.collections.test).find(query).asArray()
+  })
+}
+
+e.remove = query => {
+  return client.auth.loginWithCredential(new s.AnonymousCredential()).then(user => {
+    return db.collection(auth.collections.test).deleteMany(query)
   })
 }
 
