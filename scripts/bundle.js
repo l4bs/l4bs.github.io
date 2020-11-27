@@ -75181,7 +75181,6 @@ e.meditation = mid => {
 
       duration -= 0.1
       if (duration < 0) {
-        clearInterval(timer)
         duration = 0
         // display.text('status: started')
         countdown.text('started')
@@ -75191,6 +75190,7 @@ e.meditation = mid => {
         synth2.volume.rampTo(-40, 1)
         mod.frequency.rampTo(1 / s.mp1, s.md)
         setTimeout(() => {
+          clearInterval(timer)
           grid.css('background', 'blue')
           countdown.text('finished')
           synth.volume.rampTo(-400, 10)
