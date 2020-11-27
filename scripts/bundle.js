@@ -75168,7 +75168,7 @@ e.meditation = mid => {
     let propx = 1
     let propy = 1
     let rot = Math.random() * 0.1
-    let okGiven
+    let okGiven, started
     const timer = setInterval(() => {
       let minutes = parseInt(duration / 60, 10)
       let seconds = parseInt(duration % 60, 10)
@@ -75179,9 +75179,10 @@ e.meditation = mid => {
       // display.text('status: countdown on ' + minutes + ':' + seconds)
       countdown.text('countdown on ' + minutes + ':' + seconds)
 
-      duration -= 0.1
-      if (duration < 0) {
+      duration -= 0.01
+      if (duration < 0 && !started) {
         duration = 0
+        started = true
         // display.text('status: started')
         countdown.text('started')
         // t.start()
