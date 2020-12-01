@@ -79334,7 +79334,7 @@ e.communion = () => {
   $('<span/>').html('<b>when</b>').appendTo(grid)
   $('<span/>').html('<b>subject</b>').appendTo(grid)
   const els = [
-    ['December 3st, 12h: ', 'comfort'],
+    ['December 3st, 12h: ', 'trust'],
     ['December 3st, 6h: ', 'silence'],
     ['December 2st, 18h: ', 'thoughts depuration'],
     ['December 2st, 12h: ', 'time application'],
@@ -79347,6 +79347,8 @@ e.communion = () => {
     $('<span/>').text(e[0]).appendTo(grid)
     $('<span/>').html(l(e[1])).appendTo(grid)
   })
+  $('<span/>').text('December 1st, 6h:').appendTo(grid)
+  $('<span/>').html('health (for one\'s self, loved ones,<br>people in need, all humanity)').appendTo(grid)
 }
 
 const linkL = path => {
