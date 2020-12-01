@@ -79320,11 +79320,11 @@ e.communion = () => {
   They are dedicated to be a group concentration for humanity's
   well-being (by extention also for the world and all creation's well-being).</p>
 
-  <p>The outline is not rigid and is intended as:
+  <p>The outline is not rigid and intended as follows:
   <ul>
     <li>10 minutes to gather, talk, and agree on the mentalization subject.</li>
-    <li>15 minutes of meditation, with breathing and brainwaves synchronized through the online gadgets linked below. Thus <b>anyone that arrives late looses the meditation, there is no way around it</b></li>
-    <li>5 minutes for final words and considerations and farewells</li>
+    <li>15 minutes of meditation, with breathing and brainwaves synchronized through the online gadgets linked below. Thus <b>anyone that arrives late looses the meditation, there is no way around it</b>.</li>
+    <li>5 minutes for final words and considerations and farewells.</li>
   </ul>
 
   <p>Join us at <a target="_blank" href="https://meet.google.com/bkr-vzhw-zfc">our video conference</a></a>.</p>
