@@ -78629,8 +78629,9 @@ e.mkMed = () => {
       bcc.fromString(e.bcc)
       ccc.fromString(e.ccc)
       lcc.fromString(e.lcc)
+      communionSchedule.prop('checked', e.communionSchedule || false)
     })
-  window.allthem = transfer.findAll({ meditation: { $exists: true } }).then(r => {
+  transfer.findAll({ meditation: { $exists: true } }).then(r => {
     window.allthem2 = r
     r.forEach((i, ii) => {
       s.append($('<option/>', { class: 'pres' }).val(ii).html(i.meditation))
@@ -78641,9 +78642,10 @@ e.mkMed = () => {
     .click(() => {
       console.log($(`option[value="${$('#mselect').val()}"].pres`))
       const moption = $(`option[value="${$('#mselect').val()}"].pres`)
-      window.moption = moption
-      transfer.remove({ meditation: window.allthem2[moption[0].value].meditation })
+      const oind = moption[0].value
+      transfer.remove({ meditation: window.allthem2[oind].meditation })
       moption.remove()
+      window.allthem2.splice(oind, 1)
     })
     .attr('title', 'Delete the meditation loaded in the dropdown menu.')
   $('<span/>').html('id:').appendTo(grid)
@@ -78753,6 +78755,12 @@ e.mkMed = () => {
     .attr('title', 'The color of the moving circle in (or most to) the laterals.')
   const lcc = new J('#lcc', { value: '#FFFF00' })
 
+  $('<span/>').html('<a target="_blank" href="?p=communion">communion schedule</a>:').appendTo(grid)
+  const communionSchedule = $('<input/>', {
+    type: 'checkbox'
+  }).appendTo(grid)
+    .attr('title', 'Is this meeting to be put on the communion meetings table?')
+
   const f = parseFloat
   $('<button/>')
     .attr('title', 'Create the meditation with the settings defined.')
@@ -78778,8 +78786,7 @@ e.mkMed = () => {
       console.log(mdict, 'MDICT')
       mdict.dateTime = mfp.selectedDates[0]
       if (mdict.dateTime === undefined || mdict.dateTime < new Date()) {
-        window.alert('define a date which has not passed.')
-        return
+        if (!window.confirm('the date has passed. Are you shure?')) return
       }
       mdict.meditation = mdiv.val()
       if (mdict.meditation === '') {
@@ -78799,6 +78806,7 @@ e.mkMed = () => {
       mdict.bcc = bcc.toString()
       mdict.ccc = ccc.toString()
       mdict.lcc = lcc.toString()
+      mdict.communionSchedule = communionSchedule.prop('checked')
       console.log(fl.val())
       if (f(fr.val()) < 4) return
       transfer.writeAny(mdict).then(resp => console.log(resp))
@@ -79353,6 +79361,49 @@ e.communion = () => {
 
 const linkL = path => {
   return `<a href="${path}">${path}</a>`
+}
+
+e.communion2 = () => {
+  $('<div/>', {
+    css: {
+      margin: '0 auto',
+      padding: '8px',
+      width: '50%'
+    }
+  }).appendTo('body').html(`
+  <h2>Communions</h2>
+
+  <p>We have daily meetings 0h, 6h, 12h, and 18h (GMT-3).
+  They are dedicated to be a group concentration for humanity's
+  well-being (by extention also for the world and all creation's well-being).</p>
+
+  <p>The outline is not rigid and intended as follows:
+  <ul>
+    <li>10 minutes to gather, talk, and agree on the mentalization subject.</li>
+    <li>15 minutes of meditation, with breathing and brainwaves synchronized through the online gadgets linked below. Thus <b>anyone that arrives late looses the meditation, there is no way around it</b>.</li>
+    <li>5 minutes for final words and considerations and farewells.</li>
+  </ul>
+
+  <p>Join us at <a target="_blank" href="https://meet.google.com/bkr-vzhw-zfc">our video conference</a></a>.</p>
+  `)
+  const l = t => `<a href="?m=${t}" target="_blank">${t}</a>`
+  const grid = utils.mkGrid(2)
+  $('<span/>').html('<b>when</b> (UTC)').appendTo(grid)
+  $('<span/>').html('<b>subject</b>').appendTo(grid)
+  transfer.findAll({ communionSchedule: true }).then(r => {
+    window.myr = r
+    r.sort((a, b) => b.dateTime - a.dateTime)
+    r.forEach(e => {
+      const adate = (new Date(e.dateTime - 60 * 10 * 1000)).toISOString()
+        .replace(/T/, ' ')
+        .replace(/:\d\d\..+/, '')
+      console.log(adate)
+      $('<span/>').text(adate).appendTo(grid)
+      $('<span/>').html(l(e.meditation)).appendTo(grid)
+    })
+    $('<span/>').text('December 1st, 6h:').appendTo(grid)
+    $('<span/>').html('health (for one\'s self, loved ones,<br>people in need, all humanity)').appendTo(grid)
+  })
 }
 
 },{"./maestro.js":217,"./med":218,"./net.js":221,"./router.js":222,"./transfer.js":224,"./utils.js":225,"@eastdesire/jscolor":1,"flatpickr":43,"graphology-layout-forceatlas2":50,"jquery":60,"pixi.js":204,"tone":212}],224:[function(require,module,exports){
