@@ -77695,6 +77695,7 @@ const PIXI = require('pixi.js')
 const maestro = require('../maestro.js')
 const transfer = require('../transfer.js')
 const utils = require('../utils.js')
+const u = require('../router.js').urlArgument
 
 const e = module.exports
 const tr = PIXI.utils.string2hex
@@ -77721,7 +77722,10 @@ e.meditation = mid => {
       conoff.attr('disabled', true)
       vonoff.text('-----')
     }
-    const duration = (s.dateTime.getTime() - (new Date()).getTime()) / 1000
+    let duration = (s.dateTime.getTime() - (new Date()).getTime()) / 1000
+    if (u('t')) {
+      duration = parseFloat(u('t'))
+    }
     if (duration < 0) {
       vonoff.text('Already started, maybe finished, ask team for another session.')
       conoff.attr('checked', true).attr('disabled', true)
@@ -77731,6 +77735,12 @@ e.meditation = mid => {
     }
     setCountdown(duration, fun1)
     function fun1 () { // to start the med
+      if (!conoff.prop('checked')) {
+        grid.css('background', 'blue')
+        countdown.text('finished')
+        conoff.prop('disabled', true)
+        return
+      }
       const { synth, synthR, mod } = setSounds(s)
       countdown.text('started')
       t.Master.mute = false
@@ -77837,9 +77847,8 @@ e.meditation = mid => {
     app.renderer.backgroundColor = tr(s.bgc)
     const synth = maestro.mkOsc(0, -400, -1, 'sine')
     const synthR = maestro.mkOsc(0, -400, 1, 'sine')
-    const oscAmp = s.ma
     const mod_ = maestro.mkOsc(1 / s.mp0, 0, 0, 'sine', true)
-    const mul = new t.Multiply(oscAmp)
+    const mul = new t.Multiply(s.ma)
     const mod = mod_.connect(mul)
     const addL = new t.Add(s.fl)
     const addR = new t.Add(s.fr)
@@ -77856,7 +77865,6 @@ e.meditation = mid => {
     let propx = 1
     let propy = 1
     let rot = Math.random() * 0.1
-    const freqRef = s.fl
     const parts = []
     window.pparts = parts
     let f1 = (n, sx, sy, mag) => {
@@ -77871,11 +77879,24 @@ e.meditation = mid => {
       }
     }
     // setInterval(() => {
+    let lastdc = 0
     app.ticker.add(() => {
       const dc = met2.getValue()
-      m1.text(met.getValue().toFixed(3))
-      m2.text(dc.toFixed(3))
-      // const val = (freqRef - dc) / oscAmp
+      // const intensity = (1 - Math.abs(dc)) * 255
+      if (dc - lastdc > 0) { // inhale
+        // mais proximo de 1, mais azul
+        // m1.css('background', `rgba(${intensity}, ${intensity}, 0, ${1 - Math.abs(dc)})`)
+        m1.css('opacity', 1 - Math.abs(dc))
+        m2.css('opacity', 0)
+      } else { // exhale
+        // mais proximo de -1, mais azul
+        m2.css('opacity', 1 - Math.abs(dc))
+        m1.css('opacity', 0)
+        // m2.css('background', `rgba(${intensity}, ${intensity}, 0, ${1 - Math.abs(dc)})`)
+      }
+      lastdc = dc
+      // m1.text(met.getValue().toFixed(3))
+      // m2.text(dc.toFixed(3))
       const val = -dc
       const avalr = Math.asin(val)
       const px = (avalr < 0 ? 2 * Math.PI + avalr : avalr) / (2 * Math.PI) * dx + x
@@ -77915,8 +77936,6 @@ e.meditation = mid => {
           f1(n, sx, sy, mag)
         }
       }
-      console.log('iteration', px, px2, val, avalr, dy, dx, y, x, rot, sc, parts.length)
-      console.log('aux:', freqRef, dc, oscAmp)
     })
     // }, 10)
     return { synth, synthR, mod }
@@ -77929,6 +77948,8 @@ e.meditation = mid => {
 
   const vonoff = $('<div/>', { id: 'vonoff' }).appendTo(grid).text('Check me!')
 
+  t.Master.mute = true
+  window.ttt = t
   const conoff = $('<input/>', {
     type: 'checkbox'
   }).appendTo(grid).change(function () {
@@ -77941,13 +77962,18 @@ e.meditation = mid => {
     }
   })
 
-  $('<div/>').text('meter').appendTo(grid)
+  $('<div/>').text('inhale').appendTo(grid)
   const m1 = $('<div/>', { id: 'meter1' }).appendTo(grid)
-  $('<div/>').text('meter DC').appendTo(grid)
+    .css('background', 'rgb(255,255,0)')
+    .css('opacity', 0)
+  $('<div/>').text('exhale').appendTo(grid)
   const m2 = $('<div/>', { id: 'meter2' }).appendTo(grid)
+    .css('background', 'rgb(255,255,0)')
+    .css('opacity', 0)
+  window.mm = { m1, m2 }
 }
 
-},{"../maestro.js":217,"../transfer.js":224,"../utils.js":225,"jquery":60,"pixi.js":204,"tone":212}],221:[function(require,module,exports){
+},{"../maestro.js":217,"../router.js":222,"../transfer.js":224,"../utils.js":225,"jquery":60,"pixi.js":204,"tone":212}],221:[function(require,module,exports){
 const Graph = require('graphology')
 const { erdosRenyi } = require('graphology-generators/random')
 const PIXI = require('pixi.js')
