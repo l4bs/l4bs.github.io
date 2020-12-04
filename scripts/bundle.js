@@ -77400,22 +77400,23 @@ window.wand = {
   router: require('./modules/router.js'),
   net: require('./modules/net.js'),
   med: require('./modules/med'),
-  test: require('./modules/test.js')
+  test: require('./modules/test.js'),
+  $: require('jquery')
 }
 
 const page = wand.router.urlArgument('p')
 if (page !== null) wand.test[wand.router.urlArgument('p')]()
 
-const meditation = wand.router.urlArgument('m') // identificator created in the dedicated page
-// if (meditation !== null) wand.test.atry(meditation)
-if (meditation !== null) {
-  wand.test.atry2(meditation)
-}
+// const meditation = wand.router.urlArgument('m') // identificator created in the dedicated page
+// // if (meditation !== null) wand.test.atry(meditation)
+// if (meditation !== null) {
+//   wand.test.atry2(meditation)
+// }
 
-const meditation2 = wand.router.urlArgument('mm')
+const meditation2 = wand.router.urlArgument('m')
 if (meditation2 !== null) wand.med.model3(meditation2)
 
-},{"./modules/med":218,"./modules/net.js":222,"./modules/router.js":223,"./modules/test.js":224}],217:[function(require,module,exports){
+},{"./modules/med":218,"./modules/net.js":222,"./modules/router.js":223,"./modules/test.js":224,"jquery":60}],217:[function(require,module,exports){
 const d = require('./utils.js').defaultArg
 const t = require('tone')
 
@@ -78037,12 +78038,12 @@ e.meditation = mid => {
         conoff.prop('disabled', true)
         return
       }
-      const { synth, synthR, mod } = setSounds(s)
+      const { synth, synthR, mod_ } = setSounds(s)
       countdown.text('started')
       t.Master.mute = false
       synth.volume.rampTo(-40, 1)
       synthR.volume.rampTo(-40, 1)
-      mod.frequency.rampTo(1 / s.mp1, s.md)
+      mod_.frequency.rampTo(1 / s.mp1, s.md)
       grid.css('background', 'lightgreen')
       setCountdown(s.d, fun2, [synth, synthR])
     }
@@ -78157,6 +78158,42 @@ e.meditation = mid => {
     const met2 = new t.DCMeter()
     mod_.connect(met2)
 
+    const pOsc = parseInt(s.panOsc)
+    if (pOsc === 1 || pOsc === 2) { // sinusoid pan oscillation
+      let panOsc
+      if (pOsc === 1) { // in sync with Martigli oscillation
+        panOsc = mod_
+      } else { // independent period
+        panOsc = maestro.mkOsc(1 / s.panOscPeriod, 0, 0, 'sine')
+      }
+      const neg = new t.Negate()
+      const mul1 = new t.Multiply(1)
+      panOsc.fan(neg, mul1)
+      mul1.connect(synth.panner.pan)
+      neg.connect(synthR.panner.pan)
+    } else if (pOsc === 3) { // envelope pan oscillation
+      console.log('GOING OK')
+      // 1s transition, thus period > 1s
+      const sub1 = new t.Add(-1)
+      const mul = new t.Multiply(2).connect(sub1)
+      const env = new t.Envelope({
+        attack: 1,
+        decay: 0.01,
+        sustain: 1,
+        release: 1
+      }).connect(mul)
+      const sub1_ = new t.Negate()
+      sub1.connect(sub1_)
+      sub1.connect(synth.panner.pan)
+      sub1_.connect(synthR.panner.pan)
+      const aPer = parseFloat(s.panOscPeriod)
+      new t.Loop(time => {
+        env.triggerAttackRelease(aPer, time)
+      }, aPer * 2).start()
+      t.Transport.start()
+      console.log('TTHING', s)
+    }
+
     let propx = 1
     let propy = 1
     let rot = Math.random() * 0.1
@@ -78174,11 +78211,6 @@ e.meditation = mid => {
       }
     }
     let lastdc = 0
-    const neg = new t.Negate()
-    const mul1 = new t.Multiply(1)
-    mod_.fan(neg, mul1)
-    mul1.connect(synth.panner.pan) // dc
-    neg.connect(synthR.panner.pan) // -dc
     app.ticker.add(() => {
       const dc = met2.getValue()
       // const intensity = (1 - Math.abs(dc)) * 255
@@ -78935,6 +78967,7 @@ e.mkMed = () => {
         return
       }
       const e = window.allthem2[ii]
+      console.log(e)
       mdiv.val(e.meditation)
       fl.val(e.fl)
       fr.val(e.fr)
@@ -78954,6 +78987,11 @@ e.mkMed = () => {
       bcc.fromString(e.bcc)
       ccc.fromString(e.ccc)
       lcc.fromString(e.lcc)
+      if (e.panOsc === undefined) e.panOsc = '0'
+      // $(`#panOsc option[value=${e.panOsc}]`).attr('selected', 'selected')
+      $('#panOsc').val(e.panOsc)
+      panOscPeriod.val(e.panOscPeriod ? e.panOscPeriod : '')
+      panOscPeriod.attr('disabled', e.panOsc < 2)
       communionSchedule.prop('checked', e.communionSchedule || false)
     })
   transfer.findAll({ meditation: { $exists: true } }).then(r => {
@@ -79029,6 +79067,25 @@ e.mkMed = () => {
     placeholder: 'in seconds (0 if forever)'
   }).appendTo(grid)
     .attr('title', 'Duration of the meditation in seconds.')
+
+  $('<span/>').html('pan oscillation:').appendTo(grid)
+  const panOsc = $('<select/>', { id: 'panOsc' }).appendTo(grid)
+    .append($('<option/>').val(0).html('none'))
+    .append($('<option/>').val(1).html('synced with Martigli Oscillation'))
+    .append($('<option/>').val(2).html('sine independent of Martigli Oscillation'))
+    .append($('<option/>').val(3).html('envelope (linear transition, stable sustain)'))
+    .attr('title', 'Type of pan oscillation.')
+    .on('change', aself => {
+      const ii = aself.currentTarget.value
+      panOscPeriod.attr('disabled', ii < 2)
+    })
+
+  $('<span/>').html('pan oscillation period:').appendTo(grid)
+  const panOscPeriod = $('<input/>', {
+    placeholder: 'in seconds'
+  }).appendTo(grid)
+    .attr('title', 'Duration of the pan oscillation in seconds.')
+    .attr('disabled', true)
 
   $('<span/>').html('breathing ellipse:').appendTo(grid)
   const ellipse = $('<input/>', {
@@ -79107,6 +79164,17 @@ e.mkMed = () => {
           window.alert(`define the value for ${key}.`)
           return
         }
+      }
+      mdict.panOsc = panOsc.val()
+      console.log(mdict.panOsc, 'HERE')
+      if (mdict.panOsc > 1) {
+        const oPeriod = f(panOscPeriod.val())
+        if (isNaN(oPeriod)) {
+          window.alert('define the value for the pan oscillation period.')
+          return
+        }
+        mdict.panOscPeriod = oPeriod
+        console.log(mdict.panOsc, mdict.oPeriod)
       }
       console.log(mdict, 'MDICT')
       mdict.dateTime = mfp.selectedDates[0]
@@ -79775,6 +79843,46 @@ e.panBug = () => { // todo: post on tonejs' github
     }
   })
   window.maux = { mod_, neg, synth, synth2, synth3 }
+}
+
+e.envPan = () => {
+  const sub1 = new t.Add(-1)
+  const mul = new t.Multiply(2).connect(sub1)
+  const env = new t.Envelope({
+    attack: 3,
+    decay: 0.2,
+    sustain: 1,
+    release: 5
+  }).connect(mul)
+  const synth = maestro.mkOsc(200, -400, -1, 'sine')
+  sub1.connect(synth.panner.pan) // dc
+
+  const sub1_ = new t.Negate()
+  sub1.connect(sub1_)
+
+  const grid = utils.mkGrid(2)
+  const vonoff = $('<div/>', { id: 'vonoff' }).appendTo(grid).text('Stopped')
+  $('<input/>', {
+    type: 'checkbox'
+  }).appendTo(grid).change(function () {
+    if (this.checked) {
+      t.start()
+      synth.volume.rampTo(-20, 1)
+      env.triggerAttackRelease(10)
+      vonoff.text('Playing')
+    } else {
+      vonoff.text('Stopped')
+    }
+  })
+  const met2 = new t.DCMeter()
+  env.connect(met2)
+  const met = new t.DCMeter()
+  sub1.connect(met)
+  const met3 = new t.DCMeter()
+  sub1_.connect(met3)
+  setInterval(() => {
+    console.log('val:', met3.getValue(), met2.getValue(), met.getValue(), synth.panner.pan.value)
+  }, 200)
 }
 
 },{"./maestro.js":217,"./med":218,"./net.js":222,"./router.js":223,"./transfer.js":225,"./utils.js":226,"@eastdesire/jscolor":1,"flatpickr":43,"graphology-layout-forceatlas2":50,"jquery":60,"pixi.js":204,"tone":212}],225:[function(require,module,exports){
